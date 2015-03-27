@@ -20,7 +20,8 @@ tun_open(char* name){
   memset(&ifr,0,sizeof(ifr));
   strncpy(ifr.ifr_name, name, IFNAMSIZ-1);
 
-  ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
+  ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
+  //  ifr.ifr_flags = IFF_TUN // | IFF_NO_PI;
   if (ioctl(fd, TUNSETIFF, (void *)&ifr) < 0) {
     return T_SET_TAP_ERROR;
   }

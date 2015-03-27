@@ -14,6 +14,7 @@ import Network.VPN.Pocket.TUN
 import Data.Serialize
 import Data.Serialize.Get
 import Data.Word
+import System.IO
 
 
 data Packet = PacketIPv4 {
@@ -39,6 +40,7 @@ runServer name (ip,port) (ip',port') = do
 --  _ <- tunSetIp name ipw
   case etun of
     Right tun -> do
+      hSetBuffering tun NoBuffering
       withSocketsDo $ do
         addrinfo <- getAddr Nothing port
         addrinfo' <- getAddr (Just ip') port'
@@ -48,19 +50,19 @@ runServer name (ip,port) (ip',port') = do
         -- sockChan <- newChan
         -- sockChan' <- newChan
         bindSocket sock (addrAddress addrinfo)
+        -- print $ "start"
+        forkIO $ forever $ do
+          -- print $ "get tun"
+          bs <- B.hGetSome tun (64*1024)
+          -- print $ B.length bs
+          void $ sendTo sock' bs (addrAddress addrinfo')
+        -- print $ "start2"
         forever $ do
           (bs,addr) <- recvFrom sock (64*1024)
           forkIO $ do
-            print $ "put tun"
-            print $ B.length bs
+            -- print $ "put tun"
+            -- print $ B.length bs
             B.hPut tun bs
-          return ()
-        forkIO $ forever $ do
-          bs <- B.hGet tun (64*1024)
-          print $ "get tun"
-          print $ B.length bs
-          void $ sendTo sock' bs (addrAddress addrinfo')
-        return ()
     Left err -> print err
   where
     getAddr ip port = do
