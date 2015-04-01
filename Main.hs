@@ -13,25 +13,52 @@ import Network.VPN.Pocket.SimpleServer
 default (T.Text)
 
 data Command
-  = SimpleServer String String String String String
+  = SimpleTunServer {
+       netDevice :: String
+     , serverIp :: String
+     , serverPort :: String
+     , clientIp :: String
+     , clientPort :: String
+     , daemonize :: Bool
+    }
+  | SimpleTapServer {
+       netDevice :: String
+     , serverIp :: String
+     , serverPort :: String
+     , clientIp :: String
+     , clientPort :: String
+     , daemonize :: Bool
+    }
   deriving Show
 
-simpleServer :: Parser Command
-simpleServer = SimpleServer
+simpleTunServer :: Parser Command
+simpleTunServer = SimpleTunServer
       <$> (argument str (metavar "NETDEVICE"))
       <*> (argument str (metavar "SERVERIP"))
       <*> (argument str (metavar "SERVERPORT"))
       <*> (argument str (metavar "CLIENTIP"))
       <*> (argument str (metavar "CLIENTPORT"))
+      <*> flag False True (long "daemoize" <> short 'd'<> help "Enable daemonize mode")
+
+simpleTapServer :: Parser Command
+simpleTapServer = SimpleTapServer
+      <$> (argument str (metavar "NETDEVICE"))
+      <*> (argument str (metavar "SERVERIP"))
+      <*> (argument str (metavar "SERVERPORT"))
+      <*> (argument str (metavar "CLIENTIP"))
+      <*> (argument str (metavar "CLIENTPORT"))
+      <*> flag False True (long "daemoize" <> short 'd'<> help "Enable daemonize mode")
 
 parse :: Parser Command
 parse = subparser $ 
-        command "server"    (info simpleServer (progDesc "simple udp server"))
-
+        command "tun-server"  (info simpleTunServer (progDesc "simple udp server")) <>
+        command "tap-server"  (info simpleTapServer (progDesc "simple udp server"))
         
 runCmd :: Command -> IO ()
-runCmd (SimpleServer net host ip host' ip') = do
-  runServer net (host,ip) (host',ip')
+runCmd (SimpleTunServer net host ip host' ip' _ ) = do
+  runTunServer net (host,ip) (host',ip')
+runCmd (SimpleTapServer net host ip host' ip' _ ) = do
+  runTapServer net (host,ip) (host',ip')
 
 opts :: ParserInfo Command
 opts = info (parse <**> helper) idm

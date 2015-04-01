@@ -5,9 +5,10 @@ module Network.VPN.Pocket.TUN (
 , TError(..)
 , toTError
 , tunOpen
-, tunUp
-, tunSetIp
-, tunSetMask
+, tapOpen
+, ifUp
+, ifSetIp
+, ifSetMask
 ) where
 
 #include "vpn_tun.h"
@@ -46,23 +47,30 @@ tunOpen name = withCString name $ \name' -> do
     then (fdToHandle $ Fd res) >>= return.Right
     else return $ Left $ toTError res
 
-tunUp :: DeviceName -> IO (Either TError ())
-tunUp name = withCString name $ \name' -> do
-  res <- c_tunUp name'
+tapOpen :: DeviceName -> IO (Either TError Handle)
+tapOpen name = withCString name $ \name' -> do
+  res <- c_tapOpen name'
+  if res >= 0
+    then (fdToHandle $ Fd res) >>= return.Right
+    else return $ Left $ toTError res
+
+ifUp :: DeviceName -> IO (Either TError ())
+ifUp name = withCString name $ \name' -> do
+  res <- c_ifUp name'
   if res >= 0
     then return $ Right ()
     else return $ Left $ toTError res
 
-tunSetIp :: DeviceName -> Word32 -> IO (Either TError ())
-tunSetIp name ip = withCString name $ \name' -> do
-  res <- c_tunSetIp name' $ CUInt ip
+ifSetIp :: DeviceName -> Word32 -> IO (Either TError ())
+ifSetIp name ip = withCString name $ \name' -> do
+  res <- c_ifSetIp name' $ CUInt ip
   if res >= 0
     then return $ Right ()
     else return $ Left $ toTError res
 
-tunSetMask :: DeviceName -> Word32 -> IO (Either TError ())
-tunSetMask name mask = withCString name $ \name' -> do
-  res <- c_tunSetMask name' $ CUInt mask
+ifSetMask :: DeviceName -> Word32 -> IO (Either TError ())
+ifSetMask name mask = withCString name $ \name' -> do
+  res <- c_ifSetMask name' $ CUInt mask
   if res >= 0
     then return $ Right ()
     else return $ Left $ toTError res
@@ -71,11 +79,14 @@ tunSetMask name mask = withCString name $ \name' -> do
 foreign import ccall safe "vpn_tun.h tun_open"
   c_tunOpen :: CString -> IO CInt
 
-foreign import ccall safe "vpn_tun.h tun_up"
-  c_tunUp :: CString -> IO CInt
+foreign import ccall safe "vpn_tun.h tap_open"
+  c_tapOpen :: CString -> IO CInt
 
-foreign import ccall safe "vpn_tun.h tun_set_ip"
-  c_tunSetIp :: CString -> CUInt -> IO CInt
+foreign import ccall safe "vpn_tun.h if_up"
+  c_ifUp :: CString -> IO CInt
 
-foreign import ccall safe "vpn_tun.h tun_set_mask"
-  c_tunSetMask :: CString -> CUInt -> IO CInt
+foreign import ccall safe "vpn_tun.h if_set_ip"
+  c_ifSetIp :: CString -> CUInt -> IO CInt
+
+foreign import ccall safe "vpn_tun.h if_set_mask"
+  c_ifSetMask :: CString -> CUInt -> IO CInt

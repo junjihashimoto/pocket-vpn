@@ -16,7 +16,6 @@ import Data.Serialize.Get
 import Data.Word
 import System.IO
 
-
 data Packet = PacketIPv4 {
   pSrcAddr :: Word32
 , pDstAddr :: Word32
@@ -32,12 +31,11 @@ readPacket dat = flip runGet dat $ do
   dst <- getWord32be
   return $ PacketIPv4 src dst dat
 
-runServer :: DeviceName -> (String,String) -> (String,String) -> IO ()
-runServer name (ip,port) (ip',port') = do
+runServer' :: (DeviceName -> IO (Either TError Handle)) -> DeviceName -> (String,String) -> (String,String) -> IO ()
+runServer' open name (ip,port) (ip',port') = do
   ipw <- inet_addr ip
-  etun <- tunOpen name
-  _ <- tunUp name
---  _ <- tunSetIp name ipw
+  etun <- open name
+  _ <- ifUp name
   case etun of
     Right tun -> do
       hSetBuffering tun NoBuffering
@@ -46,22 +44,13 @@ runServer name (ip,port) (ip',port') = do
         addrinfo' <- getAddr (Just ip') port'
         sock <- socket (addrFamily addrinfo) Datagram defaultProtocol
         sock' <- socket (addrFamily addrinfo') Datagram defaultProtocol
-        -- tunChan <- newChan
-        -- sockChan <- newChan
-        -- sockChan' <- newChan
         bindSocket sock (addrAddress addrinfo)
-        -- print $ "start"
         forkIO $ forever $ do
-          -- print $ "get tun"
           bs <- B.hGetSome tun (64*1024)
-          -- print $ B.length bs
           void $ sendTo sock' bs (addrAddress addrinfo')
-        -- print $ "start2"
         forever $ do
           (bs,addr) <- recvFrom sock (64*1024)
           forkIO $ do
-            -- print $ "put tun"
-            -- print $ B.length bs
             B.hPut tun bs
     Left err -> print err
   where
@@ -71,3 +60,9 @@ runServer name (ip,port) (ip',port') = do
                    ip (Just port)
       maybe (fail "no addr info") return (listToMaybe addrinfos)
 
+
+runTunServer :: DeviceName -> (String,String) -> (String,String) -> IO ()
+runTunServer = runServer' tunOpen
+
+runTapServer :: DeviceName -> (String,String) -> (String,String) -> IO ()
+runTapServer = runServer' tapOpen

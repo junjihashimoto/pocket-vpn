@@ -74,21 +74,22 @@ executable pocket-vpn
   ghc-options:       -Wall -threaded -rtsopts -with-rtsopts=-N -O2
   default-language:    Haskell2010
 
--- test-suite test
---     type:              exitcode-stdio-1.0
---     main-is:           test.hs
---     hs-source-dirs:    tests,dist/build/autogen
---     ghc-options:       -Wall
+test-suite test
+    type:              exitcode-stdio-1.0
+    main-is:           test.hs
+    hs-source-dirs:    tests,dist/build/autogen
+    ghc-options:       -Wall
 
---     build-depends: base
---                  , pocket-dns
---                  , transformers
---                  , hspec
---                  , hspec-contrib
---                  , hspec-server
---                  , test-sandbox
---                  , hspec-test-sandbox
---                  , cabal-test-bin
---                  , shakespeare
---                  , text
---     Default-Language:   Haskell2010
+    build-depends: base
+                 , pocket-vpn
+                 , transformers
+                 , hspec
+                 , hspec-contrib
+                 , hspec-server
+                 , test-sandbox
+                 , hspec-test-sandbox
+                 , cabal-test-bin
+                 , shakespeare
+                 , text
+                 , network-builder
+    Default-Language:   Haskell2010
